@@ -1,0 +1,259 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Role Evaluation System</title>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+    <style>
+        /* General Styling */
+        body {
+            font-family: Arial, sans-serif;
+            background-color: #f9f9f9;
+            margin: 0;
+            padding: 20px;
+        }
+
+        .container {
+            max-width: 800px;
+            margin: auto;
+            padding: 20px;
+            background-color: #fff;
+            border-radius: 10px;
+            box-shadow: 0 0 10px rgba(0, 0, 0, 0.1);
+        }
+
+        h1 {
+            text-align: center;
+            text-transform: uppercase;
+        }
+
+        .section {
+            margin-top: 20px;
+        }
+
+        select, input, button {
+            padding: 10px;
+            margin: 10px 0;
+            font-size: 16px;
+        }
+
+        button {
+            background-color: #007bff;
+            color: #fff;
+            border: none;
+            cursor: pointer;
+            transition: background-color 0.3s;
+        }
+
+        button:hover {
+            background-color: #0056b3;
+        }
+
+        .hidden {
+            display: none;
+        }
+
+        ul {
+            list-style: none;
+            padding: 0;
+        }
+
+        li {
+            margin-bottom: 10px;
+        }
+
+        .factor-label {
+            font-weight: bold;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1 id="title">Role Validation</h1>
+
+        <!-- Role Validation Section -->
+        <div class="section" id="role-validation">
+            <select id="role-select">
+                <option value="">Select Role</option>
+                <option value="ceo">CHIEF EXECUTIVE OFFICER</option>
+                <option value="cme">CUSTOMER MANAGEMENT EXECUTIVE</option>
+            </select>
+            <div id="role-details" class="hidden">
+                <!-- Role details populated by JavaScript -->
+            </div>
+            <button id="start-assessment" class="hidden">Start Employee Assessment</button>
+        </div>
+
+        <!-- Employee Assessment Section -->
+        <div class="section hidden" id="employee-assessment">
+            <h2>Employee Assessment</h2>
+            <input type="text" id="employee-id" placeholder="Employee ID">
+            <input type="text" id="employee-name" placeholder="Employee Name">
+            <input type="text" id="project" placeholder="Section/Project">
+            <input type="text" id="evaluator-name" placeholder="Evaluator Name">
+            <input type="text" id="evaluator-position" placeholder="Evaluator Position">
+            <button id="add-employee">Add Employee</button>
+            <div id="employee-list">
+                <!-- Employee details will be populated here -->
+            </div>
+            <button id="finish-assessment" class="hidden">Finish Assessment & Download Report</button>
+        </div>
+    </div>
+
+    <script>
+        document.addEventListener('DOMContentLoaded', function () {
+            console.log("DOM fully loaded and parsed. Initializing script...");
+
+            // Role definitions
+            const roleDefinitions = {
+                "ceo": {
+                    name: "CHIEF EXECUTIVE OFFICER",
+                    PROFESSIONALKNOWLEDGE: { score: 6, description: "EXPERT LEVEL KNOWLEDGE REQUIRED" },
+                    EXPERIENCE: { score: 6, description: "EXTENSIVE EXPERIENCE REQUIRED" },
+                    COGNITIVEPROBLEMSOLVING: { score: 6, description: "HIGHLY COMPLEX PROBLEM-SOLVING SKILLS" }
+                },
+                "cme": {
+                    name: "CUSTOMER MANAGEMENT EXECUTIVE",
+                    PROFESSIONALKNOWLEDGE: { score: 2, description: "BASIC KNOWLEDGE REQUIRED" },
+                    EXPERIENCE: { score: 2, description: "LIMITED EXPERIENCE REQUIRED" },
+                    COGNITIVEPROBLEMSOLVING: { score: 2, description: "BASIC PROBLEM-SOLVING SKILLS" }
+                }
+            };
+
+            let currentRole = null;
+            let employees = [];
+
+            // Selecting elements from the DOM
+            const roleSelect = document.getElementById('role-select');
+            const roleDetailsDiv = document.getElementById('role-details');
+            const startAssessmentBtn = document.getElementById('start-assessment');
+            const employeeAssessmentSection = document.getElementById('employee-assessment');
+            const employeeListDiv = document.getElementById('employee-list');
+            const title = document.getElementById('title');
+            const finishAssessmentBtn = document.getElementById('finish-assessment');
+
+            // Handle role selection change
+            roleSelect.addEventListener('change', function () {
+                const selectedRole = roleSelect.value;
+
+                if (selectedRole && roleDefinitions[selectedRole]) {
+                    currentRole = roleDefinitions[selectedRole];
+                    roleDetailsDiv.innerHTML = `
+                        <h3>ROLE: ${currentRole.name}</h3>
+                        <ul>
+                            ${Object.entries(currentRole)
+                              .filter(([key]) => key !== 'name')
+                              .map(([factor, { score, description }]) => `
+                                <li><strong>${factor}:</strong> Predetermined Score: ${score} (${description})</li>
+                            `).join('')}
+                        </ul>
+                    `;
+                    roleDetailsDiv.classList.remove('hidden');
+                    startAssessmentBtn.classList.remove('hidden');
+                } else {
+                    roleDetailsDiv.classList.add('hidden');
+                    startAssessmentBtn.classList.add('hidden');
+                }
+            });
+
+            // Start Employee Assessment Button Click
+            startAssessmentBtn.addEventListener('click', function () {
+                console.log("Start Employee Assessment button clicked");
+                
+                // Update title and switch sections
+                title.textContent = 'Employee Assessment';
+                document.getElementById('role-validation').classList.add('hidden');
+                employeeAssessmentSection.classList.remove('hidden');
+            });
+
+            // Add Employee Button Click
+            document.getElementById('add-employee').addEventListener('click', function () {
+                const employeeId = document.getElementById('employee-id').value;
+                const employeeName = document.getElementById('employee-name').value;
+                const project = document.getElementById('project').value;
+                const evaluatorName = document.getElementById('evaluator-name').value;
+                const evaluatorPosition = document.getElementById('evaluator-position').value;
+
+                if (employeeId && employeeName) {
+                    console.log("Adding employee:", employeeId, employeeName);
+
+                    // Create a new employee assessment card
+                    const employeeDiv = document.createElement('div');
+                    employeeDiv.classList.add('employee');
+                    employeeDiv.innerHTML = `
+                        <h4>${employeeName} (ID: ${employeeId})</h4>
+                        <p>Project: ${project}</p>
+                        <p>Evaluator: ${evaluatorName} (${evaluatorPosition})</p>
+                        <ul>
+                            ${Object.entries(currentRole)
+                              .filter(([key]) => key !== 'name')
+                              .map(([factor, { score, description }]) => `
+                                <li>
+                                    <span class="factor-label">${factor}:</span> 
+                                    Predetermined Score: ${score} (${description})
+                                    <select data-employee-id="${employeeId}" data-factor="${factor}">
+                                        <option value="">Select New Score</option>
+                                        <option value="1">1 - Very Basic</option>
+                                        <option value="2">2 - Basic</option>
+                                        <option value="3">3 - Intermediate</option>
+                                        <option value="4">4 - Advanced</option>
+                                        <option value="5">5 - Expert</option>
+                                        <option value="6">6 - Mastery</option>
+                                    </select>
+                                </li>
+                            `).join('')}
+                        </ul>
+                    `;
+                    employeeListDiv.appendChild(employeeDiv);
+
+                    // Save employee information for report
+                    employees.push({
+                        employeeId,
+                        employeeName,
+                        project,
+                        evaluatorName,
+                        evaluatorPosition,
+                        role: currentRole
+                    });
+
+                    finishAssessmentBtn.classList.remove('hidden');
+                } else {
+                    alert("Please enter both Employee ID and Employee Name.");
+                }
+            });
+
+            // Finish Assessment and Download Report
+            finishAssessmentBtn.addEventListener('click', function () {
+                console.log("Finish Assessment & Download Report button clicked");
+                
+                // Initialize jsPDF and generate the report
+                const { jsPDF } = window.jspdf;
+                const doc = new jsPDF();
+
+                employees.forEach((employee, index) => {
+                    if (index > 0) {
+                        doc.addPage();
+                    }
+                    doc.text(`Employee Assessment Report`, 10, 10);
+                    doc.text(`Employee ID: ${employee.employeeId}`, 10, 20);
+                    doc.text(`Employee Name: ${employee.employeeName}`, 10, 30);
+                    doc.text(`Project: ${employee.project}`, 10, 40);
+                    doc.text(`Evaluator: ${employee.evaluatorName} (${employee.evaluatorPosition})`, 10, 50);
+
+                    let yOffset = 60;
+
+                    Object.entries(employee.role)
+                        .filter(([key]) => key !== 'name')
+                        .forEach(([factor, { score, description }]) => {
+                            doc.text(`${factor}: Predetermined Score: ${score} (${description})`, 10, yOffset);
+                            yOffset += 10;
+                        });
+                });
+
+                doc.save('Employee_Assessment_Report.pdf');
+            });
+        });
+    </script>
+</body>
+</html>
